@@ -1,0 +1,72 @@
+extern _REQUIRE_NOT() stack(1, 0) reads(CONTROL_FLOW)
+extern _REQUIRE(z0) stack(1, 0) reads(CONTROL_FLOW)
+
+const PACKED_SELECTORS
+
+/*
+selector
+
+- token
+- addresses.relativeOffset
+- amounts.relativeOffset
+- totalAmount
+- addresses.length
+- <elements> * n
+- amounts.length
+- <elements> * n
+
+*/
+
+fn _START<z0>() -> (addr_offset, rel_offset, token, end) {
+    addr_rel_offset = calldataload(0x24)
+    amounts_rel_offset = calldataload(0x44)
+    addr_offset = add(addr_rel_offset, 4)
+    amounts_offset = add(amounts_rel_offset, 4)
+
+    addr_len = calldataload(addr_offset)
+    amounts_len = calldataload(amounts_offset)
+
+    mstore(z0, PACKED_SELECTORS)
+    mstore8(z0, eq(addr_len, amounts_len))
+
+    token = calldataload(0x04)
+    total_amount = calldataload(0x64)
+
+    mstore(msize(), caller())
+    mstore(msize(), address())
+    mstore(msize(), total_amount)
+
+    success = call(gas(), token, z0, 0x1c, 0x64, z0, z0)
+    mstore8(success, z0)
+
+    end = add(0x20, add(addr_offset, shl(5, addr_len)))
+    rel_offset = sub(addr_offset, amounts_offset)
+
+    addr_offset = add(addr_offset, 0x20)
+}
+
+fn _TRANSFER_BODY<z0>
+               (addr_offset, rel_offset, token, end)
+    -> (repeat, addr_offset', rel_offset, token, end)
+{
+    addr = calldataload(addr_offset)
+    mstore(0x1c, addr)
+
+    amount = calldataload(sub(addr_offset, rel_offset))
+    mstore(0x3c, amount)
+
+    success = call(gas(), token, z0, 0x18, 0x44, z0, z0)
+    mstore8(success, z0)
+
+    addr_offset' = add(addr_offset, 0x20)
+    repeat = lt(addr_offset', end)
+}
+
+fn _SKIP_LOOP(addr_offset, rel_offset, token, end) -> (skip, addr_offset, rel_offset, token, end) {
+    skip = eq(addr_offset, end)
+}
+
+fn _CHECK_FLAG<z0>() {
+    _REQUIRE<z0>(byte(z0, mload(z0)))
+}
+

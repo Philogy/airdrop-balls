@@ -1,0 +1,139 @@
+
+#define constant PACKED_SELECTORS = 0xa9059cbb23b872dd
+
+#define macro MAIN() = takes(0) returns(0) {
+    _MAIN(0x0)
+}
+
+#define macro _REQUIRE_NOT() = takes(1) returns(0) {
+    global_revert jumpi
+
+}
+
+#define macro _REQUIRE(z0) = takes(1) returns(0) {
+    no_revert jumpi
+        <z0> <z0> revert
+    no_revert:
+}
+
+#define macro _MAIN(z0) = takes(0) returns(0) {
+    _START(<z0>)                // [end, token, rel_offset, addr_offset]
+    _SKIP_LOOP()                // [end, token, rel_offset, addr_offset, skip]
+    no_loop jumpi               // [end, token, rel_offset, addr_offset]
+    loop_start:
+        _TRANSFER_BODY(<z0>)    // [end, token, rel_offset, addr_offset, repeat]
+        loop_start jumpi        // [end, token, rel_offset, addr_offset']
+    _CHECK_FLAG(<z0>)
+    no_loop:
+    stop
+    global_revert:
+        <z0> <z0> revert
+}
+
+// balls-insert-start
+#define macro _CHECK_FLAG(z0) = takes(0) returns(0) {
+    // takes:                      []
+    <z0>                        // [z0]
+    mload                       // [mload(z0)]
+    <z0>                        // [mload(z0), z0]
+    byte                        // [byte(z0, mload(z0))]
+    _REQUIRE(<z0>)              // []
+    // returns:                    []
+}
+
+#define macro _SKIP_LOOP() = takes(4) returns(5) {
+    // takes:                      [end, token, rel_offset, addr_offset]
+    dup4                        // [end, token, rel_offset, addr_offset, end]
+    dup2                        // [end, token, rel_offset, addr_offset, end, addr_offset]
+    eq                          // [end, token, rel_offset, addr_offset, skip]
+    // returns:                    [end, token, rel_offset, addr_offset, skip]
+}
+
+#define macro _START(z0) = takes(0) returns(4) {
+    // takes:                      []
+    0x4                         // [0x4]
+    0x44                        // [0x4, 0x44]
+    calldataload                // [0x4, amounts_rel_offset]
+    add                         // [amounts_offset]
+    0x4                         // [amounts_offset, 0x4]
+    calldataload                // [amounts_offset, token]
+    address                     // [amounts_offset, token, address()]
+    0x4                         // [amounts_offset, token, address(), 0x4]
+    0x24                        // [amounts_offset, token, address(), 0x4, 0x24]
+    calldataload                // [amounts_offset, token, address(), 0x4, addr_rel_offset]
+    add                         // [amounts_offset, token, address(), addr_offset]
+    <z0>                        // [amounts_offset, token, address(), addr_offset, z0]
+    <z0>                        // [amounts_offset, token, address(), addr_offset, z0, z0]
+    <z0>                        // [amounts_offset, token, address(), addr_offset, z0, z0, z0]
+    dup7                        // [amounts_offset, token, address(), addr_offset, z0, z0, z0, amounts_offset]
+    dup5                        // [amounts_offset, token, address(), addr_offset, z0, z0, z0, amounts_offset, addr_offset]
+    sub                         // [amounts_offset, token, address(), addr_offset, z0, z0, z0, rel_offset]
+    swap5                       // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address()]
+    caller                      // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller()]
+    dup6                        // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_offset]
+    calldataload                // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len]
+    dup1                        // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, addr_len]
+    0x5                         // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, addr_len, 0x5]
+    shl                         // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, shl(0x5, addr_len)]
+    dup8                        // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, shl(0x5, addr_len), addr_offset]
+    add                         // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, add(addr_offset, shl(0x5, addr_len))]
+    0x20                        // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, add(addr_offset, shl(0x5, addr_len)), 0x20]
+    add                         // [amounts_offset, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, end]
+    swap10                      // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, amounts_offset]
+    calldataload                // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), addr_len, amounts_len]
+    eq                          // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), eq(amounts_len, addr_len)]
+    [PACKED_SELECTORS]          // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), eq(amounts_len, addr_len), PACKED_SELECTORS]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), eq(amounts_len, addr_len), PACKED_SELECTORS, z0]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), eq(amounts_len, addr_len)]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), eq(amounts_len, addr_len), z0]
+    mstore8                     // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller()]
+    msize                       // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), caller(), msize()]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0, address()]
+    msize                       // [end, token, rel_offset, addr_offset, z0, z0, z0, address(), msize()]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0]
+    0x64                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64]
+    0x1c                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0]
+    0x64                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0, 0x64]
+    calldataload                // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0, total_amount]
+    msize                       // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0, total_amount, msize()]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0]
+    dup9                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0, token]
+    gas                         // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x64, 0x1c, z0, token, gas()]
+    call                        // [end, token, rel_offset, addr_offset, z0, success]
+    mstore8                     // [end, token, rel_offset, addr_offset]
+    0x20                        // [end, token, rel_offset, addr_offset, 0x20]
+    add                         // [end, token, rel_offset, addr_offset]
+    // returns:                    [end, token, rel_offset, addr_offset]
+}
+
+#define macro _TRANSFER_BODY(z0) = takes(4) returns(5) {
+    // takes:                      [end, token, rel_offset, addr_offset]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0, z0]
+    dup5                        // [end, token, rel_offset, addr_offset, z0, z0, z0, rel_offset]
+    dup5                        // [end, token, rel_offset, addr_offset, z0, z0, z0, rel_offset, addr_offset]
+    sub                         // [end, token, rel_offset, addr_offset, z0, z0, z0, sub(addr_offset, rel_offset)]
+    calldataload                // [end, token, rel_offset, addr_offset, z0, z0, z0, amount]
+    dup5                        // [end, token, rel_offset, addr_offset, z0, z0, z0, amount, addr_offset]
+    calldataload                // [end, token, rel_offset, addr_offset, z0, z0, z0, amount, addr]
+    0x1c                        // [end, token, rel_offset, addr_offset, z0, z0, z0, amount, addr, 0x1c]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0, amount]
+    0x3c                        // [end, token, rel_offset, addr_offset, z0, z0, z0, amount, 0x3c]
+    mstore                      // [end, token, rel_offset, addr_offset, z0, z0, z0]
+    0x44                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x44]
+    0x18                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x44, 0x18]
+    <z0>                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x44, 0x18, z0]
+    dup9                        // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x44, 0x18, z0, token]
+    gas                         // [end, token, rel_offset, addr_offset, z0, z0, z0, 0x44, 0x18, z0, token, gas()]
+    call                        // [end, token, rel_offset, addr_offset, z0, success]
+    mstore8                     // [end, token, rel_offset, addr_offset]
+    0x20                        // [end, token, rel_offset, addr_offset, 0x20]
+    add                         // [end, token, rel_offset, addr_offset']
+    dup4                        // [end, token, rel_offset, addr_offset', end]
+    dup2                        // [end, token, rel_offset, addr_offset', end, addr_offset']
+    lt                          // [end, token, rel_offset, addr_offset', repeat]
+    // returns:                    [end, token, rel_offset, addr_offset', repeat]
+}
+// balls-insert-end
